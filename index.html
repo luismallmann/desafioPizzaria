@@ -96,16 +96,32 @@
         </div>
         <div class="linha" style="text-align: center; padding-top: 50px; padding-bottom: 20px;">
             <input type="button" class="button" id="idExibir" name="nmExibir" value="Mostrar Custo X Benefício">
-            <h5>*O resultado é exibido no console do navegador</h5>
         </div>
-
+        <div class="linha" style="text-align: center;">
+            <table border=1 class="tableClassPizzas" id="tableIdPizzas">
+                <thead id="thIdPizzas">
+                    <tr class="trClassPizza">
+                        <th class="thNome">Nome</th>
+                        <th class="thDiametro">Diâmetro</th>
+                        <th class="thPreco">Preço</th>
+                        <th class="thCustoArea">R$ p/ cm²</th>
+                        <th class="thCustoBeneficio">Custo x Benefício</th>
+                    </tr>
+                </thead>
+                <tbody id="tboIdLinha">
+                    <tr class="trPizzaData">
+                    </tr>
+            </table>
+        </div>
     </div>
 </body>
 <script>
     var btCadastrar, btExibir;
     var retornoTipos="";
+    var exibir = false;
    
-    var pizzasCadastradas = [];
+    //Armazena as pizzas cadastradas
+    var pizzas = [];
 
     
     btCadastrar = document.getElementById("idCadastrar");
@@ -128,9 +144,8 @@
             document.getElementById("idTamanho").value="";
             document.getElementById("idPreco").value="";
 
-
             //Grava os valores lido no array
-            pizzasCadastradas.push({tipoPizzas:tipo, tamanhoPizzas: tamanho, precoPizzas: preco, custoArea:""});
+            pizzas.push({tipoPizzas:tipo, tamanhoPizzas: tamanho, precoPizzas: preco, custoArea:""});
 
             //Retorna os tipos informados e gravados no array para o HTML, informando na tela
             retornoTipos += tipo + ", ";
@@ -140,44 +155,84 @@
     } 
     
     btExibir.onclick = function(){
-            let custoArea=[];
+        let custoArea=[];
+      
+        //Chama as funções responsáveis por realizar cada etapa. Pizza é armazenada em uma varíavel global, por isso, não são passados parametros.
+        calcularCustoArea();
+        exibirResultados();
+    }
+
+    //Funcao que calcula o custo da pizza por cm²
+    function calcularCustoArea(){
+        for(let i = 0; i < pizzas.length; i++){
             let area;
             let pizzaAnalisada;
+            //busca o objeto analisado no momento
+            pizzaAnalisada = pizzas[i];
+
+            //Área da pizza (tamanho / 2 devido ao tamanho inicial ser o diametro e não o raio)
+            area = 3.14 * Math.pow((pizzaAnalisada.tamanhoPizzas/2),2);
             
-            for(let i = 0; i < pizzasCadastradas.length; i++){
-                //busca o objeto analisado no momento
-                pizzaAnalisada = pizzasCadastradas[i];
+            //Cálculo do valor da pizza por cm2 e guarda no objeto
+            pizzas[i].custoArea=Number(pizzaAnalisada.precoPizzas/area).toFixed(3);
+        }    
+        //Chama a função que ordena o objeto pizzas conforme o custo por cm² de cada pizza
+        ordenarCusto();
+    }
 
-                //Área da pizza (tamanho / 2 devido ao tamanho inicial ser o diametro e não o raio)
-                area = 3.14 * Math.pow((pizzaAnalisada.tamanhoPizzas/2),2);
-                
-                //Cálculo do valor da pizza por cm2 e guarda no objeto
-                pizzasCadastradas[i].custoArea=Number(pizzaAnalisada.precoPizzas/area).toFixed(3);
-            }    
+    //Função que ordena em forma crescente por custo por área(menor para maior)
+    function ordenarCusto(){
+        pizzas.sort(function (a,b){
+            return a.custoArea - b.custoArea;         
+        });
+    }
+
+    //Função responsável por exibir os resultados
+    function exibirResultados(){     
+        for(let i=0; i < pizzas.length; i++){
+            pizzaAnalisada=pizzas[i];
+            let acionarLinha="";
             
-            //Ordenação em forma crescente por custo por área(menor para maior)
-            pizzasCadastradas.sort(function (a,b){
-                return a.custoArea - b.custoArea;         
-            });
+            //melhor custo beneficio(primeira leitura)
+            if(i==0){
+                var tBody = document.getElementById("tboIdLinha");
 
-            //Exibir resultados
-            console.log("Nome\tDiâmetro\tPreço\tR$ p/ cm²\tDiferença")
-            for(let i=0; i < pizzasCadastradas.length; i++){
-                pizzaAnalisada=pizzasCadastradas[i];
-                
-                //melhor custo beneficio(primeira leitura)
-                if(i==0){
-                    console.log(pizzaAnalisada.tipoPizzas+"\t"+pizzaAnalisada.tamanhoPizzas+"\t"+pizzaAnalisada.precoPizzas+"\t"+pizzaAnalisada.custoArea+"\t"+"MELHOR CB");
-                }
-                else{
-                    //calcula a diferenca de preço entre as opcoes e mostra o percentual
-                    let diferencaCxB = ((pizzaAnalisada.custoArea/pizzasCadastradas[i-1].custoArea)*100).toFixed(2)-100;
-                    diferencaCxB = "+"+diferencaCxB+"%";
-
-                    //imprime o resultado no console
-                    console.log(pizzaAnalisada.tipoPizzas+"\t"+pizzaAnalisada.tamanhoPizzas+"\t"+pizzaAnalisada.precoPizzas+"\t"+pizzaAnalisada.custoArea+"\t"+diferencaCxB);
-                }
+                //cria linha no html
+                acionarLinha = criarLinha(pizzaAnalisada, "MELHOR CB");
+                tBody.appendChild(acionarLinha);
             }
-    }    
+            else{
+                //calcula a diferenca de preço entre as opcoes e mostra o percentual
+                let diferencaCxB = ((pizzaAnalisada.custoArea/pizzas[i-1].custoArea)*100).toFixed(2)-100;
+                diferencaCxB = "+"+diferencaCxB.toFixed(3)+"%";
+                
+                //cria linha no html
+                acionarLinha = criarLinha(pizzaAnalisada, diferencaCxB);
+                tBody.appendChild(acionarLinha);
+            }
+        }
+    }
+
+    //Funcao que cria uma linha (um tr)
+    function criarLinha(pizza, diferenca){
+        let pizzaTr = document.createElement("tr")
+        pizzaTr.classList.add("trClassPizza");
+        pizzaTr.appendChild(criaColuna(pizza.tipoPizzas, "tdNome"));
+        pizzaTr.appendChild(criaColuna(pizza.tamanhoPizzas, "tdDiametro"));
+        pizzaTr.appendChild(criaColuna(pizza.precoPizzas, "tdPreco"));  
+        pizzaTr.appendChild(criaColuna(pizza.custoArea, "tdCustoArea")); 
+        pizzaTr.appendChild(criaColuna(diferenca, "tdCustoBeneficio"));
+        
+        return pizzaTr;
+    }
+
+    //Funcao que cria uma coluna (um td)
+    function criaColuna(dado, classe) {
+        let pizzaTd = document.createElement("td");
+        pizzaTd.textContent = dado;
+        pizzaTd.classList.add(classe);
+        
+        return pizzaTd;
+    }
 </script>
 </html>
